@@ -67,6 +67,19 @@ for arg in "$@"; do
     --sandbox=* | --mutator=* | --ruvllm-url=* | --ruvllm-model=*)
       die 64 "darwin ignores '$arg': write '${arg%%=*} ${arg#*=}' (darwin reads only the space-separated form)"
       ;;
+    # Supply-chain (2026-10-08): an exact pin names a version, but npm/npx
+    # still resolves the name wherever it is pointed. Any dash argument BEFORE
+    # the pinned package (--registry, --userconfig, --cache, -p/--package,
+    # --offline, or their nopt abbreviations, e.g. --reg) redirects or poisons
+    # resolution, so a byte-exact pin can still fetch attacker-controlled code.
+    # Darwin's own flags all come after the pin, so refuse every pre-pin dash
+    # argument; a legitimate new npx flag must be allow-listed here in review.
+    # Arm order is load-bearing: the equals-form arm above must keep matching
+    # post-pin flags first, so this catch-all goes last.
+    -*)
+      [ "${#pins[@]}" -gt 0 ] ||
+        die 64 "flag '$arg' before the pinned darwin package: npx/npm flags redirect resolution; the pin must be the first argument"
+      ;;
   esac
   [ "$prev" = "--sandbox" ] && sandbox=$arg
   [ "$prev" = "--mutator" ] && mutator=$arg
