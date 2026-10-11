@@ -141,6 +141,14 @@ describe("rowContract unit rules", () => {
       "prior-night fates",
     ]);
   });
+
+  it("keeps cell alignment when a finding carries an escaped pipe", () => {
+    const text =
+      "| " +
+      [...COMPLIANT].map((c, i) => (i === 2 ? "found a \\| b drift" : c)).join(" | ") +
+      " |";
+    expect(validateLedger(text, ENFORCE_FROM)).toEqual([]);
+  });
 });
 
 describe("rowContract on the real ledger", () => {

@@ -82,6 +82,20 @@ describe('cell escaping', () => {
     expect(renderRow(row({ finding: 'a | b' }))).toContain('a \\| b');
     expect(escapeCell('x\ny')).toBe('x y');
   });
+
+  it('round-trips an escaped pipe instead of shifting the later cells', () => {
+    const l = appendRow(emptyLedger(), row({ finding: 'found a | b drift' }));
+    const { rows, warnings } = parseLedger(l);
+    expect(warnings).toEqual([]);
+    expect(rows[0].finding).toBe('found a | b drift');
+    expect(rows[0].verdict).toBe('ACCEPT');
+    expect(rows[0].priorFates).toBe('first night');
+  });
+
+  it('verifyLedger accepts a row whose escaped pipe renderRow itself wrote', () => {
+    const r = verifyLedger(appendRow(emptyLedger(), row({ finding: 'a | b' })));
+    expect(r.ok).toBe(true);
+  });
 });
 
 describe('verifyLedger', () => {

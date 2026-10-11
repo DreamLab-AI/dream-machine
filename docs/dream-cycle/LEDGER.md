@@ -43,3 +43,6 @@
 | 2026-10-05 | compiler-parity | Bench red on the 10-03 row; repair patch did not apply to LEDGER.md | NONE | NONE | yes | BLOCKED-ENV |  | e3bbab427018 |  |  |  |
 | 2026-10-06 | ledger-signals | Bench red on the 10-03 row again; same repair as PR #22, bench and darwin pass | NONE | https://github.com/DreamLab-AI/dream-engine/pull/23 | yes | ACCEPT |  | 3e348c630519 |  |  |  |
 | 2026-10-07 | evaluation-adapters | New bench test pins darwin evaluator to scripts/darwin-entrypoint.sh wrapper | NONE | https://github.com/DreamLab-AI/dream-engine/pull/27 | yes | ACCEPT |  | fd7a41d5a3c1 |  |  |  |
+| 2026-10-08 | security-adversarial | pre-pin npx flags bypassed the darwin pin; wrapper now refuses them | NONE | https://github.com/DreamLab-AI/dream-engine/pull/28 | yes | ACCEPT |  | 0fa10caa4075 |  |  |  |
+| 2026-10-09 | developer-experience | VETOED: TUI stats undercounted non-night verdict rows; now sums via gray other… | NONE | NONE | yes | BLOCKED-ENV |  | c9092e8520a7 |  |  |  |
+| 2026-10-10 | compiler-parity | VETOED: validateConfig errors on malformed slots/scans/bonusModuli names (was… | NONE | NONE | yes | BLOCKED-ENV |  | 2ff1e4effe60 |  |  |  |

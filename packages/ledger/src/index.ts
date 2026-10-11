@@ -66,9 +66,14 @@ export function emptyLedger(): string {
 }
 
 function splitRow(line: string): string[] {
-  // Trim the leading/trailing pipe, then split on unescaped pipes.
+  // Trim the leading/trailing pipe, then split on unescaped pipes. escapeCell
+  // renders a cell's pipes as `\|`; splitting on every `|` would break inside
+  // the cell and shift every later column, so stash the escape, split, restore.
   const trimmed = line.trim().replace(/^\|/, '').replace(/\|$/, '');
-  return trimmed.split('|').map((c) => c.trim());
+  return trimmed
+    .replace(/\\\|/g, '\u0000')
+    .split('|')
+    .map((c) => c.trim().replace(/\u0000/g, '|'));
 }
 
 function isDivider(cells: string[]): boolean {

@@ -56,7 +56,12 @@ const FATE_TOKEN = /^#\d+:(MERGED|CLOSED|OPEN|STALE)$/;
 export function parseRow(line: string): string[] | null {
   const trimmed = line.trim();
   if (!trimmed.startsWith("|")) return null;
-  const cells = trimmed.split("|").map((cell) => cell.trim());
+  // Split on unescaped pipes only: escapeCell renders a cell's pipes as `\|`,
+  // and a split inside a cell would misalign every cell validated below.
+  const cells = trimmed
+    .replace(/\\\|/g, "\u0000")
+    .split("|")
+    .map((cell) => cell.trim().replace(/\u0000/g, "|"));
   if (cells.length < 12) return null;
   return cells.slice(1, 11);
 }
