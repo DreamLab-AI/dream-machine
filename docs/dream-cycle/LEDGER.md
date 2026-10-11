@@ -46,3 +46,4 @@
 | 2026-10-08 | security-adversarial | pre-pin npx flags bypassed the darwin pin; wrapper now refuses them | NONE | https://github.com/DreamLab-AI/dream-engine/pull/28 | yes | ACCEPT |  | 0fa10caa4075 |  |  |  |
 | 2026-10-09 | developer-experience | VETOED: TUI stats undercounted non-night verdict rows; now sums via gray other… | NONE | NONE | yes | BLOCKED-ENV |  | c9092e8520a7 |  |  |  |
 | 2026-10-10 | compiler-parity | VETOED: validateConfig errors on malformed slots/scans/bonusModuli names (was… | NONE | NONE | yes | BLOCKED-ENV |  | 2ff1e4effe60 |  |  |  |
+| 2026-10-11 | ledger-signals | ledger parsers split escaped pipes, shifting cells; now split unescaped only | NONE | https://github.com/DreamLab-AI/dream-engine/pull/29 | yes | ACCEPT |  | 4d4de416ba84 |  |  |  |
