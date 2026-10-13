@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
@@ -22,6 +22,29 @@ const LB_FIVE = `${FIXTURES}/darwin-leaderboard-varied.txt`;
 const LB_UNIFORM = `${FIXTURES}/darwin-leaderboard-2026-09-07.txt`;
 const LB_SIX = `${FIXTURES}/darwin-leaderboard-six-in-g2.txt`;
 
+// ADR-0008: the script admits only `npx <pin> …` heads, so the stub must be
+// reached the way the real evaluator is — through npx. fakeNpxDir() writes a
+// one-line `npx` under node_modules/.cache (writable and executable wherever
+// the repo itself is) that execs the fixture with the arguments it was given.
+let npxStubDir: string | undefined;
+function fakeNpxDir(): string {
+  if (!npxStubDir) {
+    npxStubDir = join(ROOT, 'node_modules', '.cache', `dream-darwin-npx-${process.pid}`);
+    mkdirSync(npxStubDir, { recursive: true });
+    const npx = join(npxStubDir, 'npx');
+    writeFileSync(npx, `#!/bin/sh\nexec node ${JSON.stringify(join(ROOT, FAKE))} "$@"\n`);
+    chmodSync(npx, 0o755);
+  }
+  return npxStubDir;
+}
+
+afterEach(() => {
+  if (npxStubDir) {
+    rmSync(npxStubDir, { recursive: true, force: true });
+    npxStubDir = undefined;
+  }
+});
+
 function runScript(args: string[], env: Record<string, string> = {}) {
   if (!existsSync(join(ROOT, 'packages/cli/dist/bin.js'))) {
     throw new Error('packages/cli/dist/bin.js missing — run `npm run build` before this suite');
@@ -29,14 +52,19 @@ function runScript(args: string[], env: Record<string, string> = {}) {
   const r = spawnSync(SCRIPT, args, {
     cwd: ROOT,
     encoding: 'utf8',
-    env: { ...process.env, ...env },
+    env: {
+      ...process.env,
+      PATH: process.env.PATH ? `${fakeNpxDir()}:${process.env.PATH}` : fakeNpxDir(),
+      ...env,
+    },
   });
   return { code: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 
-/** A darwin-shaped command line the script admits, routed to the stub. */
+/** A darwin-shaped command line the script admits, routed to the stub through
+ *  the PATH-shimmed npx — the same head shape as the real evaluator. */
 const stub = (...extra: string[]) => [
-  'node', FAKE, PIN, 'evolve', '.', '--sandbox', 'mock', ...extra,
+  'npx', PIN, 'evolve', '.', '--sandbox', 'mock', ...extra,
 ];
 
 describe('scripts/darwin-entrypoint.sh', () => {
@@ -102,6 +130,12 @@ describe('scripts/darwin-entrypoint.sh', () => {
     // darwin reads only `--flag value`; `--sandbox=mock` would run the real sandbox.
     ['a --sandbox=mock spelling darwin ignores', ['node', FAKE, PIN, 'evolve', '.', '--sandbox=mock']],
     ['a --ruvllm-url=URL spelling darwin ignores', [...stub('--mutator', 'ruvllm'), '--ruvllm-url=http://x']],
+    // ADR-0008: tokens do not bind a command — the head must resolve the pin,
+    // and a repeated tracked flag makes the checked value ambiguous.
+    ['an arbitrary head carrying the required tokens', ['bash', '-c', 'evil', PIN, 'evolve', '.', '--sandbox', 'mock']],
+    ['a node head instead of npx resolving the pin (the former stub shape)', ['node', FAKE, PIN, 'evolve', '.', '--sandbox', 'mock']],
+    ['pre-pin npx flags', ['npx', '--yes', PIN, 'evolve', '.', '--sandbox', 'mock']],
+    ['a repeated --sandbox flag', [...stub(), '--sandbox', 'real']],
   ])('refuses %s with exit 64 before running anything', (_name, args) => {
     const r = runScript([...args, '--report-args']);
     expect(r.code).toBe(64);
@@ -144,7 +178,14 @@ describe('scripts/darwin-entrypoint.sh with the ruvllm mutator', () => {
 
   function runScriptAsync(args: string[], env: Record<string, string> = {}) {
     return new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve) => {
-      const child = spawn(SCRIPT, args, { cwd: ROOT, env: { ...process.env, ...env } });
+      const child = spawn(SCRIPT, args, {
+        cwd: ROOT,
+        env: {
+          ...process.env,
+          PATH: process.env.PATH ? `${fakeNpxDir()}:${process.env.PATH}` : fakeNpxDir(),
+          ...env,
+        },
+      });
       let stdout = '';
       let stderr = '';
       child.stdout.on('data', (d) => (stdout += d));

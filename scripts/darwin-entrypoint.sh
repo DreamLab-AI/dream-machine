@@ -32,7 +32,8 @@
 #       for --mutator ruvllm, uniformity fails only when the shim counted 0
 #       real model edits or left no summary; otherwise it is a receipt note
 #       ("no improvement found", ADR-0007). Without the shim the rule is strict.
-#   64  refused: the command is not an exact-pinned darwin run in a mock/agent sandbox
+#  64  refused: the command is not an exact-pinned darwin run in a mock/agent
+#       sandbox whose head is `npx <pin>` (ADR-0008: the pin owns resolution)
 #   69  the CLI is not built (run `npm run build`)
 set -euo pipefail
 
@@ -52,6 +53,7 @@ sandbox=""
 mutator=""
 ruvllm_url=""
 prev=""
+seen_flags=""
 for arg in "$@"; do
   case "$arg" in
     @metaharness/darwin@*)
@@ -67,6 +69,18 @@ for arg in "$@"; do
     --sandbox=* | --mutator=* | --ruvllm-url=* | --ruvllm-model=*)
       die 64 "darwin ignores '$arg': write '${arg%%=*} ${arg#*=}' (darwin reads only the space-separated form)"
       ;;
+    # A repeated tracked flag makes the wrapper's reading ambiguous: it checks
+    # the value after the LAST occurrence, darwin might take the first
+    # (`--sandbox real --sandbox mock` would run the real sandbox while this
+    # script checks mock). Each tracked flag must appear exactly once.
+    --sandbox | --mutator | --ruvllm-url | --ruvllm-model)
+      case ",$seen_flags," in
+        *",$arg,"*)
+          die 64 "flag '$arg' appears more than once: a repeated flag makes the checked value ambiguous"
+          ;;
+      esac
+      seen_flags="$seen_flags,$arg"
+      ;;
   esac
   [ "$prev" = "--sandbox" ] && sandbox=$arg
   [ "$prev" = "--mutator" ] && mutator=$arg
@@ -78,6 +92,17 @@ done
 for pin in "${pins[@]}"; do
   [ "$pin" = "${pins[0]}" ] || die 64 "conflicting darwin pins: ${pins[0]} and $pin"
 done
+
+# ADR-0008 (structure, not tokens): the checks above prove the right tokens are
+# present, but tokens do not bind a command — `bash -c 'evil' <pin> evolve .
+# --sandbox mock` carries every required token while its head runs something
+# else as the darwin evaluator, and pre-pin npx flags (--node-options, -p,
+# --yes) resolve code the pin never chose. The head must be exactly `npx <pin>`:
+# npx resolves the package named by its first non-flag argument, so with the pin
+# in position 2 nothing can be resolved ahead of it. The test suite reaches its
+# stub the same way, through a PATH-shimmed npx (darwinEntrypoint.test.ts).
+[ "${1-}" = "npx" ] && [ "${2-}" = "${pins[0]}" ] ||
+  die 64 "the darwin command must start with 'npx ${pins[0]}' so the pin owns resolution (ADR-0008), got head '${1-} ${2-}'"
 
 # ADR-065 (dream-engine): the default 'real' sandbox is surface-independent.
 case "$sandbox" in
