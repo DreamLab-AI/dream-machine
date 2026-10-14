@@ -58,12 +58,16 @@ export function renderDashboard(ledgerMd: string, opts: DashboardOptions = {}): 
   lines.push(`${c.violet}│${c.reset} ${c.bold}${c.cyan}${pad(title, W - 2)}${c.reset} ${c.violet}│${c.reset}`);
   lines.push(`${c.violet}├${bar}┤${c.reset}`);
 
-  // Stats row.
+  // Stats row. ADR-0004 non-night verdict rows (BLOCKED-ENV/HANDOFF/OPERATOR)
+  // land in verdictStats' `other` bucket; surface it whenever nonzero so the
+  // buckets sum to the nights total — omitted, the line undercounts the ledger.
+  const otherSeg = stats.other > 0 ? `   ${c.gray}● ${stats.other} other${c.reset}` : '';
   const statLine =
     `${c.gray}nights${c.reset} ${c.bold}${total}${c.reset}   ` +
     `${c.green}● ${stats.ACCEPT} accept${c.reset}   ` +
     `${c.red}● ${stats.REJECT} reject${c.reset}   ` +
-    `${c.yellow}● ${stats.INCONCLUSIVE} inconclusive${c.reset}`;
+    `${c.yellow}● ${stats.INCONCLUSIVE} inconclusive${c.reset}` +
+    otherSeg;
   lines.push(`${c.violet}│${c.reset} ${pad(statLine, W - 2)} ${c.violet}│${c.reset}`);
   lines.push(`${c.violet}├${bar}┤${c.reset}`);
 

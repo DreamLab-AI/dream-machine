@@ -528,4 +528,14 @@ describe('tui', () => {
     const frame = renderDashboard(md, { noColor: true });
     expect(frame).toContain('zero merges');
   });
+  it('counts non-night verdict rows in an "other" bucket so stats sum to nights', () => {
+    const md = appendRow(
+      appendRow(emptyLedger(), sampleRow({ verdict: 'ACCEPT' })),
+      sampleRow({ date: '2026-08-14', verdict: 'BLOCKED-ENV' }),
+    );
+    const frame = renderDashboard(md, { noColor: true });
+    expect(frame).toContain('● 1 other');
+    const allNights = renderDashboard(appendRow(emptyLedger(), sampleRow()), { noColor: true });
+    expect(allNights).not.toContain('other');
+  });
 });
