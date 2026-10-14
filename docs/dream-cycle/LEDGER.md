@@ -48,3 +48,4 @@
 | 2026-10-10 | compiler-parity | VETOED: validateConfig errors on malformed slots/scans/bonusModuli names (was… | NONE | NONE | yes | BLOCKED-ENV |  | 2ff1e4effe60 |  |  |  |
 | 2026-10-11 | ledger-signals | ledger parsers split escaped pipes, shifting cells; now split unescaped only | NONE | https://github.com/DreamLab-AI/dream-engine/pull/29 | yes | ACCEPT |  | 4d4de416ba84 |  |  |  |
 | 2026-10-13 | security-adversarial | wrapper admitted arbitrary heads + repeated flags; now npx <pin>, once each | NONE | https://github.com/DreamLab-AI/dream-engine/pull/34 | yes | ACCEPT |  | d915d3baba15 |  |  |  |
+| 2026-10-14 | developer-experience | TUI stats line dropped non-night verdict rows; now shows gray ●N other | NONE | https://github.com/DreamLab-AI/dream-engine/pull/35 | yes | ACCEPT |  | 02b2b39aa38b |  |  |  |
