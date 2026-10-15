@@ -90,13 +90,29 @@ export function validateConfig(config: Partial<DreamConfig>): ValidationResult {
     errors.push('at least one rotation slot is required');
   } else {
     config.slots.forEach((s, i) => {
-      if (!s.deep) errors.push(`slot ${i}: missing "deep" surface`);
-      if (!s.scan || s.scan.length < 1) warnings.push(`slot ${i}: no scan surfaces`);
+      if (typeof s.deep !== 'string' || s.deep.trim() === '') {
+        errors.push(`slot ${i}: missing "deep" surface`);
+      }
+      if (!s.scan || (Array.isArray(s.scan) && s.scan.length === 0)) {
+        warnings.push(`slot ${i}: no scan surfaces`);
+      } else if (!Array.isArray(s.scan)) {
+        errors.push(`slot ${i}: "scan" must be an array of surface names`);
+      } else {
+        s.scan.forEach((name, j) => {
+          if (typeof name !== 'string' || name.trim() === '') {
+            errors.push(`slot ${i}: scan ${j} must be a non-empty surface name`);
+          }
+        });
+      }
     });
   }
   if (config.bonusModuli) {
     for (const k of Object.keys(config.bonusModuli)) {
       if (!/^\d+$/.test(k)) errors.push(`bonusModuli key "${k}" must be an integer`);
+      const surface = config.bonusModuli[k];
+      if (typeof surface !== 'string' || surface.trim() === '') {
+        errors.push(`bonusModuli key "${k}" must name a non-empty deep surface`);
+      }
     }
   }
   if (config.adrConvention !== undefined) {

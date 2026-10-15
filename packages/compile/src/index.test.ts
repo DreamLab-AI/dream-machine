@@ -46,6 +46,37 @@ describe('validateConfig', () => {
     expect(r.ok).toBe(false);
     expect(r.errors.join()).toMatch(/slot/);
   });
+  it('rejects blank or non-string slot deeps and scan surface names', () => {
+    const badSlots = [
+      { deep: '   ', scan: ['router', 'turn-credit'] },
+      { deep: 'generator-genome', scan: ['router', '   '] },
+      { deep: 'generator-genome', scan: [42, 'turn-credit'] },
+      { deep: 'generator-genome', scan: 'router,turn-credit' },
+    ] as unknown as DreamConfig['slots'];
+    for (const slot of badSlots) {
+      const r = validateConfig({ ...metaharness, slots: [slot] });
+      expect(r.ok).toBe(false);
+      expect(r.errors.join()).toMatch(/slot 0/);
+    }
+  });
+  it('still warns, not errors, on an absent scan list', () => {
+    const r = validateConfig({
+      ...metaharness,
+      slots: [{ deep: 'generator-genome' }],
+    } as unknown as DreamConfig);
+    expect(r.ok).toBe(true);
+    expect(r.warnings.join()).toMatch(/no scan surfaces/);
+  });
+  it('rejects a blank or non-string bonusModuli surface name', () => {
+    for (const bonusModuli of [{ 25: '' }, { 25: 7 }]) {
+      const r = validateConfig({
+        ...metaharness,
+        bonusModuli,
+      } as unknown as DreamConfig);
+      expect(r.ok).toBe(false);
+      expect(r.errors.join()).toMatch(/bonusModuli key "25"/);
+    }
+  });
   it('rejects a non-integer bonus modulus key', () => {
     expect(validateConfig({ ...metaharness, bonusModuli: { x: 'y' } }).ok).toBe(false);
   });
